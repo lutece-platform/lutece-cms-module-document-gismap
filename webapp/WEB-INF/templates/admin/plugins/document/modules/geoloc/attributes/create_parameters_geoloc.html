@@ -1,0 +1,47 @@
+<div class="form-group">
+    <label class="control-label col-xs-12 col-sm-3 col-md-3" for="${parameters[0].name}">${parameters[0].label}</label>
+    <div class="col-xs-12 col-sm-8 col-md-6">
+        <@comboSortedWithParams name="${parameters[0].name}" default_value="${(parameters[0].defaultValue[0])!'1740'}" additionalParameters="class=\"form-control input-sm\"" items=styles />
+        <p class="help-block">${parameters[0].description}</p>
+    </div>
+</div>
+
+<div class="form-group">
+    <label class="control-label col-xs-12 col-sm-3 col-md-3" for="${parameters[1].name}">${parameters[1].label}</label>
+	<div class="col-xs-12 col-sm-8 col-md-6">
+        <select id="${parameters[1].name}" name="${parameters[1].name}" class="form-control input-sm">
+			<#list icons as icon>
+				<#if ((parameters[1].defaultValue[0])!'default')="${icon}">
+					<option selected="selected" value="${icon}" >${icon}</option>
+				<#else>
+					<option value="${icon}" >${icon}</option>
+				</#if>
+			</#list>
+		</select>
+		<p class="help-block">${parameters[1].description}</p>
+	</div>
+</div>
+
+<div class="form-group">
+    <label class="control-label col-xs-12 col-sm-3 col-md-3" for="${parameters[2].name}">${parameters[2].label}</label>
+	<div class="col-xs-12 col-sm-8 col-md-6">
+        <select id="${parameters[2].name}" name="${parameters[2].name}" class="form-control input-sm">
+			<#list edit_types as edit_type>
+				<#if ((parameters[2].defaultValue[0])!'Address')="${edit_type}">
+					<option selected="selected" value="${edit_type}" >${edit_type}</option>
+				<#else>
+					<option value="${edit_type}" >${edit_type}</option>
+				</#if>
+			</#list>
+		</select>
+		<p class="help-block">${parameters[2].description}</p>
+	</div>
+</div>
+
+<div class="form-group">
+    <label class="control-label col-xs-12 col-sm-3 col-md-3" for="${parameters[3].name}">${parameters[3].label}</label>
+	<div class="col-xs-12 col-sm-8 col-md-6">
+        <input type="text" id="${parameters[3].name}" name="${parameters[3].name}" class="form-control input-sm" />
+		<p class="help-block">${parameters[3].description}</p>
+	</div>
+</div>

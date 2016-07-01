@@ -1,0 +1,28 @@
+<#-- ${attribute.id}${parameters['editMode'][0]} -->
+<#assign idEntry = "1">
+<#if attribute?? && attribute.id?has_content>
+	<#assign idEntry = attribute.id >
+</#if>
+<#assign viewNumberValue = "">
+<#if parameters?? && parameters['editMode']?? && parameters['viewNumber'][0]?has_content>
+	<#assign viewNumberValue = parameters['viewNumber'][0]>
+</#if>
+<#assign editModeValue = "">
+<#if parameters?? && parameters['editMode']?? && parameters['editMode'][0]?has_content>
+	<#assign editMode = parameters['editMode'][0]>
+	<#if editMode == "Address" || editMode == "Adresse" >
+		<#assign editModeValue = "SuggestPOI" >
+	</#if>
+	<#if editMode == "Point" >
+		<#assign editModeValue = "Point" >
+	</#if>
+	<#if editMode == "Line" || editMode == "Ligne">
+		<#assign editModeValue = "LineString" >
+	</#if>
+	<#if editMode == "Polygon" || editMode == "Polygone">
+		<#assign editModeValue = "Polygon" >
+	</#if>
+</#if>
+<#assign fieldParam = {"TypeEdit" : "${editModeValue}", "GeomGeoJson" : "${idEntry}_geometry", "GeomCentroidXStockage" : "${idEntry}_x", "GeomCentroidYStockage" : "${idEntry}_y", "GeomCentroidXGeocodage" : "${idEntry}_geomCentroidXGeocodage", "GeomCentroidYGeocodage" : "${idEntry}_geomCentroidYGeocodage", "GeomState" : "${idEntry}_geomState", "ExtentCurrent" : "${idEntry}_extent_current", "VisibleLayer" : "${idEntry}_visible_layer", "UrlGeoJSON1" : "", "Proxy" : "rest/gismapp/gisproxy?url="} >
+
+<#include attribute.mapProvider.getParameter(viewNumberValue?number).mapTemplateFile />

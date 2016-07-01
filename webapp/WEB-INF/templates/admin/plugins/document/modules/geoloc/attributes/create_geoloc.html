@@ -1,0 +1,120 @@
+  <#-- ${attribute.id}${parameters['editMode'][0]} -->
+<div class="form-group">
+	<label class="control-label col-xs-12 col-sm-2 col-md-2" for="${attribute.code}">${attribute.name}<#if attribute.required >*</#if></label>
+	<div class="col-xs-12 col-sm-10 col-md-10">
+		<input type="text" class="form-control input-sm" id="${attribute.code}" name="${attribute.code}"/>
+        <p class="help-block" id="help_${attribute.code}">#i18n{module.document.geoloc.attributeType.geoloc.help.geojson}</p>
+        <!-- used to keep state if the user presses back button -->
+        <input type="hidden" id="hidden_${attribute.code}"/>
+        <p class="help-block">${attribute.description}</p>
+	</div>
+    <script type='text/javascript'>
+        $('#${attribute.code}').clone().attr('type','hidden').insertAfter('#${attribute.code}').prev().remove();
+        $('#help_${attribute.code}').html("#i18n{module.document.geoloc.attributeType.geoloc.help.address}");
+
+        $('<div class="input-group"><input type="text" id="${attribute.code}_address" name="${attribute.code}_address" class="form-control input-sm"><span class="input-group-btn"><button class="btn btn-default" type="button" title="#i18n{module.document.geoloc.attributeType.geoloc.help.clear}" id="button_delete_${attribute.code}"><i class="fa fa-remove"></i></button> </span>').insertAfter('#${attribute.code}');
+
+        $('<div id=map_${attribute.code} style="height: 300px; width: 100%"></div>').insertBefore('#hidden_${attribute.code}');
+
+        if (typeof(lutece_map_resources_loaded) == 'undefined') {
+            lutece_map_resources_loaded = true
+            var loadresource = document.createElement('link');
+            loadresource.setAttribute("rel", "stylesheet");
+            loadresource.setAttribute("type", "text/css");
+            loadresource.setAttribute("href", "js/plugins/leaflet/leaflet/leaflet.css");
+            document.getElementsByTagName("head")[0].appendChild(loadresource);
+
+            loadresource = document.createElement('script');
+            loadresource.setAttribute("type", "text/javascript");
+            loadresource.setAttribute("src", "js/proj4js-combined.js");
+            document.getElementsByTagName("head")[0].appendChild(loadresource);
+
+            loadresource = document.createElement('script');
+            loadresource.setAttribute("type", "text/javascript");
+            loadresource.setAttribute("src",  "jsp/admin/plugins/address/modules/autocomplete/SetupSuggestPOI.js.jsp");
+            document.getElementsByTagName("head")[0].appendChild(loadresource);
+
+            loadresource = document.createElement('script');
+            loadresource.setAttribute("type", "text/javascript");
+            loadresource.setAttribute("src",  "js/plugins/address/modules/autocomplete/jQuery.suggestPOI.js");
+            document.getElementsByTagName("head")[0].appendChild(loadresource);
+
+            loadresource = document.createElement('script');
+            loadresource.setAttribute("type", "text/javascript");
+            loadresource.setAttribute("src",   "js/plugins/leaflet/leaflet/leaflet.js" );
+            document.getElementsByTagName("head")[0].appendChild(loadresource);
+        }
+
+        $(window).load(function() {
+            var map = L.map('map_${attribute.code}').setView([48.85632, 2.33272], 12);
+            var markers_layer = L.featureGroup().addTo(map);
+            // create the tile layer with correct attribution
+            var osmUrl='http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+            var osmAttrib='Map data © <a href="http://openstreetmap.org">OpenStreetMap</a> contributors';
+            var osm = new L.TileLayer(osmUrl, {minZoom: 8, maxZoom: 16, attribution: osmAttrib}).addTo(map);
+
+            if (!Proj4js.defs["EPSG:27561"]){
+                Proj4js.defs["EPSG:27561"]="+title=NTF (Paris) / Lambert Nord France +proj=lcc +lat_1=49.50000000000001 +lat_0=49.50000000000001 +lon_0=0 +k_0=0.999877341 +x_0=600000 +y_0=200000 +a=6378249.2 +b=6356515 +towgs84=-168,-60,320,0,0,0,0 +pm=paris +units=m +no_defs ";
+            }
+            var sourceSRID = new Proj4js.Proj('EPSG:27561');    
+            var destSRID = new Proj4js.Proj('EPSG:4326');
+            var jAdresse = $('#${attribute.code}_address');
+            jAdresse.suggestPOI();
+            jAdresse.bind($.suggestPOI.EVT_SELECT, function(event) {
+
+                var poi = event.poi;
+                if (poi) {
+                    var address = poi.libelleTypo;
+                    var lambert_x = poi.x;
+                    var lambert_y = poi.y;
+
+                    p = new Proj4js.Point(lambert_x, lambert_y);
+                    Proj4js.transform(sourceSRID, destSRID, p);
+
+                    
+                    markers_layer.clearLayers();
+                    var marker = L.marker([p.y, p.x]).addTo(markers_layer);
+                    map.fitBounds(markers_layer.getBounds());
+
+                    var obj= {
+                        "type": "Feature",
+                        "properties": {
+                            "address": address
+                        },
+                        "geometry": {
+                            "type": "Point",
+                            "coordinates": [p.x, p.y]
+                        }
+                    };
+                    $('#${attribute.code}').val(JSON.stringify(obj));
+                    $('#hidden_${attribute.code}').val(JSON.stringify(obj));
+                }
+            });
+
+            $("#button_delete_${attribute.code}").on('click', function () {
+                    $('#${attribute.code}_address').val("");
+                    $('#hidden_${attribute.code}').val("");
+                    $('#${attribute.code}').val("");
+                    map.setView([48.85632, 2.33272], 12);
+                    markers_layer.clearLayers();
+            });
+
+            //Try to restore from back/forward browser history buttons
+            var prev_data = $('#hidden_${attribute.code}').val();
+            if (prev_data) {
+                prev_value=JSON.parse(prev_data);
+                if (prev_value) {
+                    $('#${attribute.code}').val(JSON.stringify(prev_value));
+                    $('#${attribute.code}_address').val(prev_value.properties.address);
+
+                    markers_layer.clearLayers();
+                    var marker = L.marker([prev_value.geometry.coordinates[1],prev_value.geometry.coordinates[0]]).addTo(markers_layer);
+                    map.fitBounds(markers_layer.getBounds());
+                }
+            }
+
+
+    });
+
+    </script>
+</div>

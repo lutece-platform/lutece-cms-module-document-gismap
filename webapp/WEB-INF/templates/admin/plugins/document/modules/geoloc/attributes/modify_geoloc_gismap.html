@@ -1,0 +1,85 @@
+<#if base_url?? && base_url?has_content>
+	<#assign webapp_url = base_url>
+<#else>
+	<#assign webapp_url = "http://localhost:8080/gismap/">
+</#if>
+<#assign viewNumberValue = "1">
+<#if parameters?? && parameters['viewNumber']?? && parameters['viewNumber'][0]?has_content>
+	<#assign viewNumberValue = parameters['viewNumber'][0]>
+</#if>
+
+<#assign editModeValue = "">
+<#if parameters?? && parameters['editMode']?? && parameters['editMode'][0]?has_content>
+	<#assign editModeValue = parameters['editMode'][0]>
+</#if>
+<#escape x as x?html>
+<div class="form-group">
+	<label class="control-label col-xs-12 col-sm-2 col-md-2" for="${attribute.code}">${attribute.name}<#if attribute.required >*</#if></label>
+	<div class="col-xs-12 col-sm-10 col-md-10">
+		<input type="hidden" class="form-control input-sm" name="${attribute.code}" id="${attribute.code}" value="" />
+        <!-- used to keep state if the user presses back button -->
+        <input type="hidden" id="hidden_${attribute.code}"/>
+        
+        <#if editModeValue == "" || editModeValue == "Address" || editModeValue == "Adresse">
+	  		<input type="text" class="form-control input-sm" id="${attribute.id}_address" name="${attribute.id}_address" value="${gismap_address}">
+	  	<#else>
+	  		<input type="hidden" class="form-control input-sm" id="${attribute.id}_address" name="${attribute.id}_address" value="${gismap_address}">
+	  	</#if>
+	  	<input type="hidden" id="webapp_url" name="webapp_url" value="${webapp_url}"/>
+	  	<input type="hidden" id="id_additional_address" name="id_additional_address" value="">
+        <input type="hidden" id="${attribute.id}_x" name="${attribute.id}_x" value="">
+	  	<input type="hidden" id="${attribute.id}_y" name="${attribute.id}_y" value="" />
+	  	<input type="hidden" id="${attribute.id}_geometry" name="${attribute.id}_geometry"  value="${gismap_geometry}"/>
+        <div id="${attribute.id}_content_map">
+        	<#if attribute.mapProvider?has_content>
+				<#if attribute.mapProvider.key?has_content && attribute.mapProvider.key == "gismap" >
+					<#if attribute.mapProvider.getParameter(viewNumberValue?number)?? && attribute.mapProvider.getParameter(viewNumberValue?number).mapParameter??>
+						<#assign map_parameter = attribute.mapProvider.getParameter(viewNumberValue?number).mapParameter >
+					</#if>
+					<#if attribute.mapProvider.getParameter(viewNumberValue?number)?? && attribute.mapProvider.getParameter(viewNumberValue?number).addressParam??>
+						<#assign add_parameter = attribute.mapProvider.getParameter(viewNumberValue?number).addressParam >
+					</#if>
+				</#if>
+				<#include attribute.mapProvider.htmlCode />
+			</#if>
+        </div>
+        
+	</div>
+</#escape>
+    <script type='text/javascript'>
+    
+    $( "#${attribute.id}_content_map" )
+	.mouseleave(function() {
+		var typeEdit   = "${strValTypeEdit}";
+		if(typeEdit != "''"){
+		var varAddress = $("#${attribute.id}_address").val();
+		var varX = $("#${attribute.id}_x").val();
+		var varY = $("#${attribute.id}_y").val();
+		var varGeo = $("#${attribute.id}_geometry").val();
+			if(varAddress != "" && varX != "" && varY != "" && varGeo != ""){
+				var objGeom = $.parseJSON(getTransformStringToGeoJSON(varGeo));
+				var objFeaColWrite = { "type": "FeatureCollection",
+				    "features": [
+				      { "type": "Feature",
+				        "geometry": {"type": "Point", "coordinates": [Number(varX), Number(varY)]},
+				        "properties": {"address": varAddress}
+				        },
+				        objGeom
+				        ]
+				};
+				$('#${attribute.code}').val(JSON.stringify(objFeaColWrite));
+			}
+		}
+	});
+	function getTransformStringToGeoJSON(st){
+        var l = st.length;
+        var i;
+        for(i = 0; i<l; i++){
+            if(st[i]=== "'" ){
+                st = st.substr(0, i) + '"' + st.substr(i+1, l);
+            }
+        }
+        return st;
+    };
+    </script>
+</div>
