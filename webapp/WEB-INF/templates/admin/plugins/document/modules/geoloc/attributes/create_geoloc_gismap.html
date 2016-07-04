@@ -22,9 +22,9 @@
         <input type="hidden" id="hidden_${attribute.code}"/>
         
         <#if editModeValue == "" || editModeValue == "Address" || editModeValue == "Adresse">
-	  		<input type="text" class="form-control input-sm" id="${attribute.id}_address" name="${attribute.id}_address" >
+	  		<input type="text" class="form-control input-sm" id="${attribute.id}_doc_address" name="${attribute.id}_address" >
 	  	<#else>
-	  		<input type="hidden" class="form-control input-sm" id="${attribute.id}_address" name="${attribute.id}_address" >
+	  		<input type="hidden" class="form-control input-sm" id="${attribute.id}_doc_address" name="${attribute.id}_address" >
 	  	</#if>
 	  	<input type="hidden" id="webapp_url" name="webapp_url" value="${webapp_url}"/>
 	  	<input type="hidden" id="id_additional_address" name="id_additional_address" value="">
@@ -47,29 +47,79 @@
 	</div>
 	
 	<script type='text/javascript'>
-	$( "#${attribute.id}_content_map" )
-	.mouseleave(function() {
-		var typeEdit   = "${strValTypeEdit}";
-		if(typeEdit != "''"){
-		var varAddress = $("#${attribute.id}_address").val();
-		var varX = $("#${attribute.id}_x").val();
-		var varY = $("#${attribute.id}_y").val();
-		var varGeo = $("#${attribute.id}_geometry").val();
-			if(varAddress != "" && varX != "" && varY != "" && varGeo != ""){
-				var objGeom = $.parseJSON(getTransformStringToGeoJSON(varGeo));
-				var objFeaColWrite = { "type": "FeatureCollection",
+	$("#${attribute.id}_doc_address").autocomplete({
+		source : function(request, reponse){ // les deux arguments représentent les données nécessaires au plugin
+		$.ajax({
+			url : "${add_parameter.url}",
+		    dataType: "jsonp",
+		    data: {
+		    	clientId : "${add_parameter.clientId}",
+				nbResults : ${add_parameter.nbResult}, 
+				types : "${add_parameter.listType}",
+				query : request.term
+				
+		    },
+		    success : function(data){
+		    	if(data.result.length == 0){
+	                $('#${attribute.id}_x').val(0);
+	                $('#${attribute.id}_y').val(0);
+	                GisMapDisplay${idEntry}.getInteract().deleteFeatures();
+	                
+	       		}
+	            reponse($.map(getResult(data.result), function(objet){
+	            	return objet;           
+	            }));
+	        }
+	    	});
+		},
+		select : function(event, ui){
+			$('#${attribute.id}_x').val(ui.item.x);
+			$('#${attribute.id}_y').val(ui.item.y);
+			GisMapDisplay${idEntry}.getZoom().zoomSuggestPoi(ui.item.x, ui.item.y);
+			var objFeaColWriteAdd = { "type": "FeatureCollection",
 				    "features": [
 				      { "type": "Feature",
-				        "geometry": {"type": "Point", "coordinates": [Number(varX), Number(varY)]},
-				        "properties": {"address": varAddress}
+				        "geometry": {"type": "Point", "coordinates": [Number(ui.item.x), Number(ui.item.y)]},
+				        "properties": {"address": ui.item.label}
 				        },
-				        objGeom
+				        { "type": "Feature",
+				        "geometry": {"type": "Point", "coordinates": [Number(ui.item.x), Number(ui.item.y)]},
+				        "properties": {"address": ui.item.label}
+				        }
 				        ]
 				};
-				$('#${attribute.code}').val(JSON.stringify(objFeaColWrite));
+				$('#${attribute.code}').val(JSON.stringify(objFeaColWriteAdd));
+				
+		    }
+	}).focus();
+
+	$( "#${attribute.id}_content_map" )
+	.mouseout(function() {
+		var typeEdit   = "${strValTypeEdit}";
+		if(typeEdit != "''"){
+		var varX = $("#${attribute.id}_x").val();
+		var varY = $("#${attribute.id}_y").val();
+			if(varX != "" && varY != ""){
+				GisMapDisplay${idEntry}.getInteract().getEditor().forceValidate();
+				var varAddress = geocodageDoc${idEntry}();
+				var varGeo = $("#${attribute.id}_geometry").val();
+				if(varAddress != "" && varGeo != ""){
+					var objGeom = $.parseJSON(getTransformStringToGeoJSON(varGeo));
+					var objFeaColWrite = { "type": "FeatureCollection",
+						"features": [
+							{ "type": "Feature",
+							  "geometry": {"type": "Point", "coordinates": [Number(varX), Number(varY)]},
+							  "properties": {"address": varAddress}
+							},
+							objGeom
+						]
+					};
+					$("#${attribute.code}").val(JSON.stringify(objFeaColWrite));
+				}
 			}
 		}
 	});
+	
 	function getTransformStringToGeoJSON(st){
         var l = st.length;
         var i;
@@ -90,5 +140,24 @@
         }
         return st;
     };
+    
+    function geocodageDoc${attribute.id}(){
+		var webappURL = $('#webapp_url').val();
+		var valX = $('#${attribute.id}_geomCentroidXGeocodage').val();
+		var valY = $('#${attribute.id}_geomCentroidYGeocodage').val();
+		var address = "";
+		$.ajax({
+			url: webappURL + "rest/gismap/xy/" + valX + "," + valY,
+	        dataType: "jsonp",
+		    jsonpCallback: 'callback',
+	        success: function( data ) {
+				address = data.Adresse_tot+", "+data.Codepostal+" ";
+	        	$("#${attribute.id}_doc_address").val(address);
+	    	},
+	    	async: false
+	    });
+	    return address;
+	};
+
     </script>
 </div>
